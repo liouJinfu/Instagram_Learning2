@@ -13,7 +13,7 @@
                     <img src="{{image.user.head_url}}">
                 </a>
                 <div class="profile-info">
-                    <a title="{{image.user.username}}" href="/profile/{{image.user.id}}">{{image.user.username}}</a>
+                    <a title="{{image.user.username}}" href="/profiles/{{image.user.id}}">{{image.user.username}}</a>
                 </div>
             </header>
             <!--
@@ -33,7 +33,7 @@
                 {% for comment in image.comments: %}
                 {% if loop.index > 10 %} {% break %} {% endif %}
                 <li>
-                    <a title = '{{comment.user.username}}', href="/profile/{{comment.user.id}}">{{comment.user.username}}</a>
+                    <a title = '{{comment.user.username}}', href="/profiles/{{comment.user.id}}">{{comment.user.username}}</a>
                     <span>
                         <span>{{comment.comment}}</span>
                     </span>

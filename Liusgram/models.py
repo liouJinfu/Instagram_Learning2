@@ -1,6 +1,6 @@
 #-*- encoding=UTF-8 -*-
 
-from Liusgram import db
+from Liusgram import db, login_manager
 import random
 from datetime import datetime
 
@@ -35,11 +35,31 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(32))
+    salt = db.Column(db.String(32))
     head_url = db.Column(db.String(256))
     images = db.relationship('Image', backref='user', lazy= 'dynamic')
-    def __init__(self, username, password):
+    def __init__(self, username, password, salt =''):
         self.username = username
         self.password = password
+        self.salt = salt
         self.head_url = 'http://images.nowcoder.com/head/' + str(random.randint(0, 1000)) + 't.png'
     def __repr__(self):
         return '<User %d, %s>'%(self.id, self.username)
+    @property
+    def is_authenticated(self):
+        return True
+    @property
+    def is_active(self):
+        return True
+    @property
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        try:
+            return unicode(self.id)
+        except AttributeError:
+            raise NotImplementedError('No `id` attribute - override `get_id`')
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)

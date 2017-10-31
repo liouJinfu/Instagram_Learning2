@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %} 首页 {% endblock %}
+{% block title %} 首页 - {{current_user.username}}{% endblock %}
 {% block css %}/static/styles/pages/index.css {% endblock %}
 {% block content %}
 <div class="page-main clearfix">
@@ -7,11 +7,11 @@
     <article class="mod">
         <header class="mod-hd">
             <time class="time">{{ image.create_date }}</time>
-            <a href="/profile/{{image.user.id}}" class="avatar">
+            <a href="/profiles/{{image.user.id}}" class="avatar">
                 <img src="{{image.user.head_url}}">
             </a>
             <div class="profile-info">
-                <a title="/profile/{{image.user.username}}" href="/profile/{{image.user.id}}">{{image.user.username}}</a>
+                <a title="/profiles/{{image.user.username}}" href="/profiles/{{image.user.id}}">{{image.user.username}}</a>
             </div>
         </header>
         <div class="mod-bd">
@@ -59,7 +59,7 @@
                     <!--
                     <a class=" icon-remove" title="删除评论"></a>
                     -->
-                    <a class="_4zhc5 _iqaka" title="{{comment.user.username}}" href="/profile/{{comment.user.id}}" data-reactid=".0.1.0.0.0.2.1.2:$comment-17856951190001917.1">{{comment.user.username}}</a>
+                    <a class="_4zhc5 _iqaka" title="{{comment.user.username}}" href="/profiles/{{comment.user.id}}" data-reactid=".0.1.0.0.0.2.1.2:$comment-17856951190001917.1">{{comment.user.username}}</a>
                     <span>
                         <span>{{comment.comment}}</span>
                     </span>
