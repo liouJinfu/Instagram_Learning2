@@ -13,4 +13,6 @@ app.secret_key = 'Liusgram'
 login_manager = LoginManager(app)
 login_manager.login_view = '/regloginpage/'
 
+
+
 from Liusgram import views, models

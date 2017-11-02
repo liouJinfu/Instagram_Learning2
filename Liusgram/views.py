@@ -2,14 +2,17 @@
 
 from Liusgram import app, db
 from models import Image, User, Comment
-from flask import render_template, redirect, request, flash, get_flashed_messages
+from flask import render_template, redirect, request, flash, get_flashed_messages, send_from_directory
 import random, hashlib, json
-from flask_login import login_user, logout_user, login_required
-from Liusgram import login_manager
+from flask_login import login_user, logout_user, login_required, current_user
+import os, uuid
+from Liusgram.QiniuYun import upload_file_from_path, upload_file_from_stream
+
 @app.route('/')
 def index():
-    images = Image.query.order_by(db.desc(Image.id)).limit(10).all()
-    return render_template('index.html', images = images)
+    # images = Image.query.order_by(db.desc(Image.id)).limit(10).all()
+    paginate = Image.query.order_by(db.desc(Image.id)).paginate(page=1, per_page=10)
+    return render_template('index.html', has_next = paginate.has_next, images = paginate.items)
 
 @app.route('/image/<int:image_id>/')
 @login_required
@@ -108,3 +111,75 @@ def register():
 def logout():
     logout_user()
     return redirect('/')
+
+##
+def save_to_Yun(file, filename):
+    save_dir = app.config['UPLOAD_DIR']
+    file.save(os.path.join(save_dir, filename))
+    filePath = os.path.join(save_dir, filename)
+    url = upload_file_from_path(filename, filePath)
+    try :
+        os.remove(os.path.join(save_dir, filename))
+    except Exception,e:
+        print e ## 暂时没有开启log 模式等待开启
+    return url
+
+@app.route('/image/<image_name>')
+def show_image(image_name):
+    return send_from_directory(app.config['UPLOAD_DIR'], image_name)
+
+@app.route('/upload/', methods=['post'])
+def upload():
+    # print type(request.files), request.files
+    file = request.files['file']
+    # dir(file)
+    file_ext = ''
+    if file.filename.find('.') > 0:
+        file_ext = file.filename.rsplit('.', 1)[1].strip().lower()
+    if file_ext in app.config['ALLOWED_EXT']:
+        file_name  = str(uuid.uuid1()).replace('-', '') + '.' + file_ext
+        url = save_to_Yun(file, file_name)
+        if url != None:
+            db.session.add(Image(url, current_user.id))
+            db.session.commit()
+    return redirect('/profiles/%d' % current_user.id)
+
+@app.route('/addcomment/', methods=['post'])
+@login_required
+def add_comment():
+    image_id = int(request.values.get('image_id'))
+    content = request.values.get('content')
+    comment = Comment(content, image_id, current_user.id)
+    db.session.add(comment)
+    db.session.commit()
+    return json.dumps({"code" : 0, "id" : comment.id,
+                       "content" : content, "username" : comment.user.username,
+                       "user_id" : comment.user.id })
+
+@app.route('/index/image/<int:page>/<int:per_page>/')
+def index_images(page, per_page):
+    paginate = Image.query.order_by(db.desc(Image.id)).paginate(page = page, per_page=per_page)
+    images = []
+    map = {'has_next':paginate.has_next}
+    for image in paginate.items:
+        comment_content = []
+        comment_username = []
+        comment_userid = []
+        for i in range(0, min(2, len(image.comments))):
+            comment = image.comments[i]
+            comment_username.append(comment.user.username)
+            comment_content.append(comment.comment)
+            comment_userid.append(comment.user_id)
+        imgvo = {'id':image.id,
+                 'head_url':image.user.head_url,
+                 'url':image.image_url,
+                 'user_name':image.user.username,
+                 'comment_count':len(image.comments),
+                 'user_id':image.user_id,
+                 'created_date':str(image.create_date),
+                 'comment_content':comment_content,
+                 'comment_username':comment_username,
+                 'comment_userid': comment_userid}
+        images.append(imgvo)
+    map['images'] = images
+    return json.dumps(map)
